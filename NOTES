@@ -1,0 +1,13 @@
+NOTES for HTML::Truncate
+
+20051222
+
+Turn on "whole doc" excerpting...? To allow the header tags and then
+only count text in the body.
+
+Considered adding auto-detect for utf8 if declaration and meta info
+are present and agree. But now only noting it so I don't decide it's a
+great idea in six months because it's not.
+
+Mark Stosberg wrote to suggest dropping functional interface. Did.
+Also pointed at HTML::FillInForm source which I still need to read.

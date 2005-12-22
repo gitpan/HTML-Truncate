@@ -1,5 +1,11 @@
 Revision history for HTML-Truncate
 
+0.02    20051222 1325
+        - Took out the non-functional functional part at the sober
+          suggestions of Mark Stosberg.
+        - Built up POD a bitl;  note about XHTML-esque input requirement.
+        - Moved stand alone and skip tags into object.
+
 0.01    20051222 0114
         - Alpha release; missing functionality, documentation, and tests.
         - Basic OO interface seems to be working correctly.

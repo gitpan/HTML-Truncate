@@ -8,17 +8,22 @@ use HTML::TokeParser;
 use HTML::Entities ();
 use Carp;
 
+our @ISA = qw( Exporter );
+our @EXPORT_OK = ("truncate_html");
+
+
 =head1 NAME
 
-HTML::Truncate - (alpha software!) truncate HTML by text or raw character count while preserving well-formedness.
+HTML::Truncate - (alpha software!) truncate HTML by text or raw
+character count while preserving well-formedness.
 
 =head1 VERSION
 
-0.02
+0.01
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.01';
 
 =head1 ABSTRACT
 
@@ -39,22 +44,15 @@ open at the point of truncation.
 
  # OO
  use HTML::Truncate;
- my $readmore = '<a href="/full-article">readmore</a>';
  my $html_truncate = HTML::Truncate->new();
  $html_truncate->chars(200);
- $html_truncate->ellipsis($readmore);
+ $html_truncate->ellipsis($read_more_link);
  print $html_truncate->($bunch_of_html);
 
- # or
- my $ht = HTML::Truncate->new(utf => 1,
-                              chars => 1_000,
-                              );
- print $html_truncate->($html);
-
-=head1 XHTML
-
-This module is designed to only work on XHTML-style nested tags. More
-below.
+ # Functional
+ use HTML::Truncate "truncate_html";
+ # NON-OPERATIONAL RIGHT NOW
+ print truncate_html($html, 80, "&#8211;");
 
 =head1 WHITESPACE & ENTITIES
 
@@ -65,6 +63,28 @@ also normalized. The following is only counted 14 chars long.
 
   \n<p>\nthis     is   &#8216;text&#8217;\n\n</p>
   ^^^^^^^12345----678--9------01234------^^^^^^^^
+
+=head1 FUNCTIONS
+
+=head2 truncate_html($html, $char_or_percent, $ellipsis)
+
+Not operative yet!
+
+L<HTML::Truncate> maybe be used functionally or with object methods.
+It has only one function, C<truncate_html()> which is not exported by
+default.
+
+No arguments are strictly required. Without HTML to operate upon it
+returns undef. Character count defaults to 100. Ellipsis defaults to
+"C<&#8230;>."
+
+=cut
+
+sub truncate_html { # function, compare w/ method truncate
+    my ( $html, $chars, $ellipsis ) = @_;
+    return unless $html;
+    die "truncate_html() is not functional!";
+}
 
 =head1 METHODS
 
@@ -82,11 +102,6 @@ override "chars" so don't use them both.
 sub new {
     my $class = shift;
 
-    my %stand_alone = map { $_ => 1 } qw( br img hr input link base meta );
-
-    my %skip = map { $_ => 1 } qw( head script form iframe title style
-                                   base link meta );
-
     my $self = bless
     {
         _chars    => 100,
@@ -95,8 +110,6 @@ sub new {
         _style    => 'text',
         _ellipsis => '&#8230;',
         _raw_html => undef,
-        _skip_tags => \%skip,
-        _stand_alone_tags => \%stand_alone,
     }, $class;
 
     while ( my ( $k, $v ) = splice(@_, 0, 2) )
@@ -104,7 +117,8 @@ sub new {
         next unless exists $self->{"_$k"};
         $self->$k($v);
     }
-    return $self;
+
+    $self;
 }
 
 =head2 $ht->style
@@ -174,8 +188,6 @@ supported currently.
 Entities are counted as single characters. E.g., C<&copy;> is one
 character for truncation counts.
 
-Default is "100."
-
 =cut
 
 sub chars {
@@ -243,41 +255,12 @@ sub ellipsis {
     }
 }
 
-=head2 $ht->truncate($html)
-
-Also can be called with arguments--
-
- $ht->truncate( $html, $chars_or_percent, $ellipsis );
-
-No arguments are strictly required. Without HTML to operate upon it
-returns undef. The two optional arguments may be preset with the
-methods C<chars> (or C<percent>) and C<ellipsis>.
-
-Valid nesting of tags is required (alla XHTML). Therefore some old
-HTML habits like E<lt>p<gt> without a E<lt>/Pa<gt> are not supported
-and will cause a fatal error.
-
-Certain tags are omitted by default from the truncated output. There
-will be a mechanism to custom tailor these--
-
-=over 4
-
-=item skipped tags
-
- <head>...</head> <script>...</script>> <form...</form>
- <iframe></iframe> <title>...</title> <style>...</style>
- <base/> <link/> <meta/>
-
-=item tags allowed to self-close (stand alone)
-
- <br/> <img/> <hr/> <input/> <link/> <base/>
-
-=back
+=head2 $ht->truncate
 
 =cut
 
-sub truncate {
-    my $self = shift;
+sub truncate { # method, compare w/ function truncate_html
+    my $self = shift if ref($_[0]) eq __PACKAGE__;
     my ( $html, $chars_or_perc, $ellipsis ) = @_;
     return unless $html;
 
@@ -297,6 +280,10 @@ sub truncate {
 
     my $p = HTML::TokeParser->new( $self->{_raw_html} );
 
+    my %stand_alone = map { $_ => 1 } qw( br img hr link );
+    my %skip = map { $_ => 1 } qw( script iframe head title style link
+    );
+
     my ( @tag_q );
     $self->{_renew} = '';
     my $chars = $self->chars();
@@ -306,25 +293,32 @@ sub truncate {
     {
         if ( $token->[0] eq 'S' )
         {
-            next TOKENS if $self->{_skip_tags}{$token->[1]};
-            push @tag_q, $token->[1] unless $self->{_stand_alone_tags}{$token->[1]};
+            next TOKENS if $skip{$token->[1]};
+            push @tag_q, $token->[1] unless $stand_alone{$token->[1]};
             $self->{_renewed} .= $token->[-1];
         }
         elsif ( $token->[0] eq 'E' )
         {
-            next TOKENS if $self->{_skip_tags}{$token->[1]};
+            next TOKENS if $skip{$token->[1]};
             my $open  = pop @tag_q;
             my $close = $token->[1];
-            croak "<$open> closed by </$close>" unless $open eq $close;
+            croak "<$open> closed by </$close>" unless $open eq
+    $close;
             $self->{_renewed} .= $token->[-1];
         }
         elsif ( $token->[0] eq 'T' )
         {
             next TOKENS if $token->[2];
             my $txt = $token->[1];
-            $self->{_renewed} .= $txt and next if $txt =~ /^\s+$/;
 
-            my $length = length($txt);
+$self->{_renewed} .= $txt and next if $txt =~ /^\s+$/;
+
+# 987 should be padding instead so we don't alter original
+
+            my $length = length $txt;
+
+#            print qq|<#$txt#>\n|;
+
             for ( $txt =~ /
                            \A(\s+)(?=\S)
                            |
@@ -337,7 +331,7 @@ sub truncate {
                             \s(\s+)
                            /gx )
             {
-                $length -= length($1); # padding
+                $chars += length $1; # padding
             }
 
             if ( $length > $chars )
@@ -357,7 +351,7 @@ sub truncate {
     }
     $self->{_renewed} .= join('', map {"</$_>"} reverse @tag_q);
 
-    return $self->{_renewed} if defined wantarray;
+    return $self->{_renewed} if defined wantarray;    
 }
 
 sub _load_chars_from_percent {
@@ -376,15 +370,14 @@ sub _load_chars_from_percent {
     $self->chars( int( $txt_length * $self->{_percent} ) );
 }
 
+
 =head1 TO DO
 
-Make the skip and tag stuff available through methods so it can be
-altered by the user. Many more tests. Go through entire dist and make
-sure everything is kosher (autogenerated with the lovely
-L<Module::Starter>). Reorganize POD to read in best learning order.
-Make sure the padding check is working across wide range of cases. POD
-to describe various ways to use it including a TT2 filter. "html"
-style truncating.
+Many more tests. Go through entire dist and make sure everything is
+kosher (autogenerated with the lovely L<Module::Starter>). Reorganize
+POD to read in best learning order. Make sure the padding check is
+working across wide range of cases. POD to describe various ways to
+use it including a TT2 filter. "html" style truncating.
 
 =head1 AUTHOR
 
@@ -400,25 +393,24 @@ bug ticket system.
 
 Please report any bugs or feature requests to
 C<bug-html-truncate@rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=HTML-Truncate>. I
-will get the ticket, and then you'll automatically be notified of
-progress as I make changes.
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=HTML-Truncate>.
+I will be notified, and then you'll automatically be notified of
+progress on
+your ticket as I make changes.
 
 =head1 SEE ALSO
 
 L<HTML::Entities>, L<HTML::TokeParser>, the "truncate" filter in
 L<Template>, and L<Text::Truncate>.
 
-L<HTML::FillInForm> (note about...).
-
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2005 Ashley Pond V, all rights reserved.
 
-This program is free software; you can redistribute it and/or modify it
+This program is free software; you can redistribute it and/or modify
+it
 under the same terms as Perl itself.
 
 =cut
 
 1; # End of HTML::Truncate
-

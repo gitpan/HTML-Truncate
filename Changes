@@ -1,0 +1,6 @@
+Revision history for HTML-Truncate
+
+0.01    20051222 0114
+        - Alpha release; missing functionality, documentation, and tests.
+        - Basic OO interface seems to be working correctly.
+

@@ -1,9 +1,14 @@
 Revision history for HTML-Truncate
 
+0.03    20051222 1532
+        - Added dont_skip_tags and add_skip_tags (not in tests yet).
+        - Built out POD a bit more.
+        - Corrected a couple typos below in this document.
+
 0.02    20051222 1325
         - Took out the non-functional functional part at the sober
-          suggestions of Mark Stosberg.
-        - Built up POD a bitl;  note about XHTML-esque input requirement.
+          suggestion of Mark Stosberg.
+        - Built up POD a bit; note about XHTML-esque input requirement.
         - Moved stand alone and skip tags into object.
 
 0.01    20051222 0114

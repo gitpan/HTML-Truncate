@@ -14,11 +14,11 @@ HTML::Truncate - (alpha software!) truncate HTML by text or raw character count 
 
 =head1 VERSION
 
-0.02
+0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 ABSTRACT
 
@@ -264,7 +264,7 @@ will be a mechanism to custom tailor these--
 
 =item skipped tags
 
- <head>...</head> <script>...</script>> <form...</form>
+ <head>...</head> <script>...</script> <form>...</form>
  <iframe></iframe> <title>...</title> <style>...</style>
  <base/> <link/> <meta/>
 
@@ -360,6 +360,42 @@ sub truncate {
     return $self->{_renewed} if defined wantarray;
 }
 
+
+=head2 $ht->add_skip_tags( qw( tag list ) )
+
+Put one or more new tags into the list of those to be ommitted from
+truncated output.
+
+=cut
+
+sub add_skip_tags {
+    my $self = shift;
+    for ( @_ )
+    {
+        croak "Args to add_skip_tags must be scalar tag names, not references"
+            if ref $_;
+        $self->{_skip_tags}{$_} = 1;
+    }
+}
+
+
+=head2 $ht->dont_skip_tags( qw( tag list ) )
+
+asdf
+
+=cut
+
+sub dont_skip_tags {
+    my $self = shift;
+    for ( @_ )
+    {
+        croak "Args to dont_skip_tags must be scalar tag names, not references"
+            if ref $_;
+        carp "$_ was not set to be skipped"
+            unless delete $self->{_skip_tags}{$_};
+    }
+}
+
 sub _load_chars_from_percent {
     my $self = shift;
     my $p = HTML::TokeParser->new( $self->{_raw_html} );
@@ -396,7 +432,13 @@ There are places where this will break down right now. I'll pad out
 possible edge cases as I find them or they are sent to me via the CPAN
 bug ticket system.
 
-=head1 BUGS
+=head2 This is not an HTML filter
+
+Although this happens to do some crude HTML filtering to achieve its
+end, it is not a fully featured filter. If you are looking for one,
+check out L<HTML::Scrubber> and L<HTML::Sanitizer>.
+
+=head1 BUGS, FEEDBACK, PATCHES
 
 Please report any bugs or feature requests to
 C<bug-html-truncate@rt.cpan.org>, or through the web interface at
@@ -408,6 +450,8 @@ progress as I make changes.
 
 L<HTML::Entities>, L<HTML::TokeParser>, the "truncate" filter in
 L<Template>, and L<Text::Truncate>.
+
+L<HTML::Scrubber> and L<HTML::Sanitizer>.
 
 L<HTML::FillInForm> (note about...).
 

@@ -2,6 +2,10 @@ NOTES for HTML::Truncate
 
 20051222
 
+Considering overloading object to print itself as the truncated HTML
+after truncate() has been done. Makes more sense to me than a new
+method to get it.
+
 Turn on "whole doc" excerpting...? To allow the header tags and then
 only count text in the body.
 

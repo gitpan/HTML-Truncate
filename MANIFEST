@@ -1,5 +1,4 @@
 .cvsignore
-ab
 Changes
 lib/HTML/Truncate.pm
 Makefile.PL
@@ -10,4 +9,5 @@ README
 t/00-load.t
 t/pod-coverage.t
 t/pod.t
+t/synopsis.t
 t/truncate_html.t

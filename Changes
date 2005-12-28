@@ -1,5 +1,12 @@
 Revision history for HTML-Truncate
 
+0.05    20051228 0050
+        - No surface changes.
+        - Added 'object' to default skip tags.
+        - _count_visual_chars.
+        - Put in a few points of attention for installing callbacks
+          over skip tags and a dummy sub{} for img tags.
+
 0.04    20051222
         - Couple POD typos/sync-problems fixed.
         - Another POD typo in Synopsis fixed per Terrence Brannon.

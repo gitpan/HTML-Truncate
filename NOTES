@@ -1,5 +1,31 @@
 NOTES for HTML::Truncate
 
+20051227
+
+Support images being included or left out as [IMG] (user supplied) or
+"alt text" with a period after if it doesn't already contain one.
+Callback? Yeah, otherwise they can't do delimiters, etc.
+
+Move char counting into its own sub.
+
+20051225
+
+Support a <more /> and <more></more> system? The second is easy
+because you just add 'more' to skip tags and then return everything
+else.
+
+20051224
+
+Turn on an ellipsis for skipped parts? Allow it to be defined for all,
+one scalar, or per tag with a hash leaving out those going
+unspecified. Or something like
+ <p>this</p><object></object><p>that</p>
+ <p>this...</p><p>...that</p>
+is more sane because it won't break layouts.
+
+Need a way to complain/croak for things like <p>asdf<p>asdf. A can
+contain itself flag or something for div and not for much else.
+
 20051222
 
 Considering overloading object to print itself as the truncated HTML

@@ -14,11 +14,11 @@ HTML::Truncate - (alpha software!) truncate HTML by text or raw character count 
 
 =head1 VERSION
 
-0.04
+0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 ABSTRACT
 
@@ -88,8 +88,8 @@ sub new {
 
     my %stand_alone = map { $_ => 1 } qw( br img hr input link base meta );
 
-    my %skip = map { $_ => 1 } qw( head script form iframe title style
-                                   base link meta );
+    my %skip = map { $_ => 1 } qw( head script form iframe object
+                                   title style base link meta );
 
     my $self = bless
     {
@@ -310,6 +310,7 @@ sub truncate {
     {
         if ( $token->[0] eq 'S' )
         {
+            # _callback_for...? 321
             next TOKENS if $self->{_skip_tags}{$token->[1]};
             push @tag_q, $token->[1] unless $self->{_stand_alone_tags}{$token->[1]};
             $self->{_renewed} .= $token->[-1];
@@ -405,6 +406,8 @@ sub dont_skip_tags {
     }
 }
 
+# 
+
 sub _load_chars_from_percent {
     my $self = shift;
     my $p = HTML::TokeParser->new( $self->{_raw_html} );
@@ -415,11 +418,28 @@ sub _load_chars_from_percent {
     {
     # don't check padding b/c we're going by a document average
         next unless $token->[0] eq 'T' and not $token->[2];
-        $txt_length += () = $token->[1] =~
-            /\&\#\d+;|\&[[:alpha:]]{2,5};|\S|\s+/g;
+        $txt_length += _count_visual_chars( $token->[1] );
     }
     $self->chars( int( $txt_length * $self->{_percent} ) );
 }
+
+
+sub _count_visual_chars { # private function
+    my $to_count = shift;
+    my $count = () =
+        $to_count =~
+        /\&\#\d+;|\&[[:alpha:]]{2,5};|\S|\s+/g;
+    return $count;
+}
+
+# 321
+sub _default_image_callback {
+    sub {
+        '[image]'
+    }
+}
+
+
 
 =head1 TO DO
 

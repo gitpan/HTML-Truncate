@@ -14,11 +14,11 @@ HTML::Truncate - (alpha software!) truncate HTML by text or raw character count 
 
 =head1 VERSION
 
-0.05
+0.06
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 ABSTRACT
 
@@ -86,7 +86,8 @@ override "chars" so don't use them both.
 sub new {
     my $class = shift;
 
-    my %stand_alone = map { $_ => 1 } qw( br img hr input link base meta );
+    my %stand_alone = map { $_ => 1 } qw( br img hr input link base
+                                          meta area );
 
     my %skip = map { $_ => 1 } qw( head script form iframe object
                                    title style base link meta );
@@ -320,7 +321,12 @@ sub truncate {
             next TOKENS if $self->{_skip_tags}{$token->[1]};
             my $open  = pop @tag_q;
             my $close = $token->[1];
-            croak "<$open> closed by </$close>" unless $open eq $close;
+            unless ( $open eq $close ) {
+                my $nearby = substr($self->{_renewed},
+                                    length($self->{_renewed}) - 15,
+                                    15);
+                croak qq|<$open> closed by </$close> near "$nearby"|;
+            }
             $self->{_renewed} .= $token->[-1];
         }
         elsif ( $token->[0] eq 'T' )
@@ -348,9 +354,8 @@ sub truncate {
             if ( $length > $chars )
             {
                 $self->{_renewed} .= substr($txt, 0, ( $chars ) );
-
+                $self->{_renewed} =~ s/\s+$//;
                 $self->{_renewed} .= $self->ellipsis();
-
                 last TOKENS;
             }
             else

@@ -1,5 +1,17 @@
 Revision history for HTML-Truncate
 
+0.06    20060101 0152
+        - Moved the 'ellipsis' to the end of the close tags; it's a
+          compromise but t'is for the best.
+        - And moved it back out. Bad compromise. Needs to have a tree
+          logic to decide if it should go inside the last block level
+          tag or not at all.
+        - Added <area /> to stand alone tags.
+        - Put in a more helpful "<open> closed by </close> near 'LAST
+          15 CHARS IN WHAT'S BEEN CLEANED'" for the malformed croak().
+        - Snip trailing whitespace off cleaned text; gets "This..."
+          instead of "That ..."
+
 0.05    20051228 0050
         - No surface changes.
         - Added 'object' to default skip tags.

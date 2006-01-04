@@ -27,7 +27,7 @@ ok( $ht->utf8(), "Get utf8 flag" );
 ok( $ht->ellipsis() eq chr(8230),
     "Ellipsis defaults properly" );
 
-diag ( 'Ellipsis: "' . $ht->ellipsis() . '"' );
+diag( 'Ellipsis: "' . $ht->ellipsis() . '"' );
 
 ok( $ht->utf8(undef), "Unset utf8 flag" );
 

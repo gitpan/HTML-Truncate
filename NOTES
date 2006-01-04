@@ -1,5 +1,12 @@
 NOTES for HTML::Truncate
 
+20060102
+
+A flatten method which maps block elements to inline ones. h* -> b,
+blockquote -> q, div -> spanm
+
+
+
 20051227
 
 Support images being included or left out as [IMG] (user supplied) or

@@ -1,5 +1,8 @@
 Revision history for HTML-Truncate
 
+0.07    20030228 1130
+        - Added embed to skip tags.
+
 0.06    20060101 0152
         - Moved the 'ellipsis' to the end of the close tags; it's a
           compromise but t'is for the best.

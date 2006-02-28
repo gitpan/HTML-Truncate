@@ -5,7 +5,7 @@ NOTES for HTML::Truncate
 A flatten method which maps block elements to inline ones. h* -> b,
 blockquote -> q, div -> spanm
 
-
+Maybe should move it all to the tree builder.
 
 20051227
 

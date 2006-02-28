@@ -14,11 +14,11 @@ HTML::Truncate - (alpha software!) truncate HTML by text or raw character count 
 
 =head1 VERSION
 
-0.06
+0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 ABSTRACT
 
@@ -90,7 +90,7 @@ sub new {
                                           meta area );
 
     my %skip = map { $_ => 1 } qw( head script form iframe object
-                                   title style base link meta );
+                                   embed title style base link meta );
 
     my $self = bless
     {

@@ -14,7 +14,8 @@ WriteMakefile(
         'HTML::Entities' => 0,
         'HTML::TokeParser' => 0,
         'FindBin' => 0,
+        'File::Spec' => 0,
     },
-    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean               => { FILES => 'HTML-Truncate-*' },
+    dist          => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean         => { FILES => 'HTML-Truncate-*' },
 );

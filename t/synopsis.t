@@ -1,7 +1,10 @@
 #!perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
+
 use strict;
+
+use FindBin;
+use File::Spec;
+use lib File::Spec->catfile($FindBin::Bin, 'lib');
 
 use Test::More tests => 2;
 

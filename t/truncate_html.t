@@ -1,10 +1,11 @@
 #!perl
 use strict;
 
-use Test::More tests => 13;
+use Test::More tests => 15;
 
-use FindBin qw($Bin);
-use lib "$Bin/../lib";
+use FindBin;
+use File::Spec;
+use lib File::Spec->catfile($FindBin::Bin, 'lib');
 
 use HTML::Truncate;
 
@@ -48,6 +49,11 @@ ok( $ht->utf8(1) );
 
 ok( $ht->truncate($html), "Truncating HTML" );
 diag( $ht->{_renewed} );
+
+ok( $ht->percent('52%'), "Setting percentage to 52\%" );
+
+my $renewed;
+ok( $renewed = $ht->truncate($html), "Truncating" );
 
 
 __DATA__

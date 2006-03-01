@@ -10,15 +10,15 @@ use Carp;
 
 =head1 NAME
 
-HTML::Truncate - (alpha software!) truncate HTML by text or raw character count while preserving well-formedness.
+HTML::Truncate - (beta software) truncate HTML by percentage or character count while preserving well-formedness.
 
 =head1 VERSION
 
-0.07
+0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 ABSTRACT
 
@@ -95,7 +95,7 @@ sub new {
     my $self = bless
     {
         _chars    => 100,
-        _percent  => '10%',
+        _percent  => undef,
         _utf8     => undef,
         _style    => 'text',
         _ellipsis => '&#8230;',
@@ -207,8 +207,10 @@ sub percent {
     return sprintf("%d%%", 100 * $self->{_percent})
         unless $percent;
 
-    $percent =~ /^(100|[1-9]?[0-9])\%$/
-        or croak "Specified percent is invalid '$percent'";
+    my ( $temp_percent ) = $percent =~ /^(100|[1-9]?[0-9])\%$/;
+
+    $temp_percent and $temp_percent != 0
+        or croak "Specified percent is invalid '$percent' -- 1\% - 100\%";
 
     $self->{_percent} = $1 / 100;
 }
@@ -284,11 +286,13 @@ will be a mechanism to custom tailor these--
 sub truncate {
     my $self = shift;
     my ( $html, $chars_or_perc, $ellipsis ) = @_;
+
     return unless $html;
 
     $self->{_raw_html} = \$html;
 
-    if ( $chars_or_perc =~ /\d+\%$/ )
+    if ( $self->percent() or
+         $chars_or_perc =~ /\d+\%$/ )
     {
         $self->percent($chars_or_perc);
         $self->_load_chars_from_percent();

@@ -1,7 +1,5 @@
 package HTML::Truncate;
 
-use warnings; # rm when ready
-no warnings 'uninitialized';
 use strict;
 
 use HTML::TokeParser;
@@ -14,11 +12,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.08
+0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 ABSTRACT
 
@@ -74,8 +72,9 @@ also normalized. The following is only counted 14 chars long.
 
 =head2 HTML::Truncate->new
 
-Can take all the methods as hash style args. "percent" will always
-override "chars" so don't use them both.
+Can take all the methods as hash style args. "percent" and "chars" are
+incompatible so don't use them both. Whichever is set most recently
+will erase the other.
 
  my $ht = HTML::Truncate->new(utf8 => 1,
                               chars => 500, # default is 100
@@ -99,7 +98,7 @@ sub new {
         _utf8     => undef,
         _style    => 'text',
         _ellipsis => '&#8230;',
-        _raw_html => undef,
+        _raw_html => '',
         _skip_tags => \%skip,
         _stand_alone_tags => \%stand_alone,
     }, $class;
@@ -110,42 +109,6 @@ sub new {
         $self->$k($v);
     }
     return $self;
-}
-
-=head2 $ht->style
-
-Set/get. Either the default "text" or "html." (N.b.: only "text" is
-supported so far.) This determines which characters will counted for
-the truncation point. The reason why "html" is probably a poor choice
-is that you might set what you believe to be a reasonable truncation
-length of 20 chars and get an HTML tag like E<lt>a
-href="http://blah.blah.boo/longish/path/to/resource... and end up with
-no useful output.
-
-Another problem is that the truncate might fall inside an attribute,
-like the "href" above, which means that attribute will necessarily be
-excluded, quite probably rendering the remaining tag invalid so the
-entire tag must be tossed out to preserve well-formedness.
-
-But the best reason not to use "html" right now is it's not supported
-yet. It probably will be sometime in the future but unless you send a
-patch to do it, it will be awhile. It would be useful, for example to
-keep fixed length database records containing HTML truncated validly,
-but it's not something I plan to use personally so it will come last.
-
-=cut
-
-sub style {
-    my ( $self, $style ) = @_;
-    return $self->{_style} unless defined $style;
-
-    croak "'html' style is not yet supported, sorry!"
-        if $style eq 'html';
-
-    croak "Value for style must be either 'text' or 'html'"
-        unless $style =~ /^text|html$/;
-
-    $self->{_style } = $style;
 }
 
 =head2 $ht->utf8
@@ -179,7 +142,8 @@ supported currently.
 Entities are counted as single characters. E.g., C<&copy;> is one
 character for truncation counts.
 
-Default is "100."
+Default is "100." Side-effect: clears any C<percent> that has been
+set.
 
 =cut
 
@@ -188,6 +152,7 @@ sub chars {
     return $self->{_chars} unless defined $chars;
     $chars =~ /^(?:[1-9][_\d]*|0)$/
         or croak "Specified chars must be a number";
+    $self->{_percent} = undef; # no conflict allowed
     $self->{_chars} = $chars;
 }
 
@@ -195,14 +160,17 @@ sub chars {
 
 Set/get. A percentage to keep while truncating the rest. For a
 document of 1,000 chars, percent('15%') and chars(150) would be
-equivalent. If you ever add a truncate C<percent> it will override any
-C<chars> settings. The actual amount of character that the percent
-represents cannot be known until the given HTML is parsed.
+equivalent. The actual amount of character that the percent represents
+cannot be known until the given HTML is parsed.
+
+Side-effect: clears any C<chars> that has been set.
 
 =cut
 
 sub percent {
     my ( $self, $percent ) = @_;
+
+    return unless $self->{_percent} or $percent;
 
     return sprintf("%d%%", 100 * $self->{_percent})
         unless $percent;
@@ -212,6 +180,7 @@ sub percent {
     $temp_percent and $temp_percent != 0
         or croak "Specified percent is invalid '$percent' -- 1\% - 100\%";
 
+    $self->{_chars} = undef; # no conflict allowed
     $self->{_percent} = $1 / 100;
 }
 
@@ -289,15 +258,17 @@ sub truncate {
 
     return unless $html;
 
+    $self->{_renewed}  = '';    # reset
     $self->{_raw_html} = \$html;
 
     if ( $self->percent() or
+         $chars_or_perc and
          $chars_or_perc =~ /\d+\%$/ )
     {
         $self->percent($chars_or_perc);
         $self->_load_chars_from_percent();
     }
-    elsif ( defined $chars_or_perc )
+    elsif ( $chars_or_perc )
     {
         $self->chars($chars_or_perc);
     }
@@ -345,20 +316,20 @@ sub truncate {
                            |
                            (?<=\S)(\s+)\Z
                            |
-                            (?<=\&)(\#\d+;)
+                           (?<=\&)(\#\d+;)
                            |
-                            (?<=\&)([[:alpha:]]{2,5};)
+                           (?<=\&)([[:alpha:]]{2,5};)
                            |
-                            \s(\s+)
+                           \s(\s+)
                            /gx )
             {
-                $length -= length($1); # padding
+                $length -= length($1) if $1; # padding
             }
 
             if ( $length > $chars )
             {
                 $self->{_renewed} .= substr($txt, 0, ( $chars ) );
-                $self->{_renewed} =~ s/\s+$//;
+                $self->{_renewed} =~ s/\s+\Z//;
                 $self->{_renewed} .= $self->ellipsis();
                 last TOKENS;
             }
@@ -441,13 +412,48 @@ sub _count_visual_chars { # private function
     return $count;
 }
 
-# 321
-sub _default_image_callback {
-    sub {
-        '[image]'
-    }
-}
+# Need to put hooks for these or not? 321
+#sub _default_image_callback {
+#    sub {
+#        '[image]'
+#    }
+#}
 
+=head2 $ht->style
+
+Set/get. Either the default "text" or "html." (N.b.: only "text" is
+supported so far.) This determines which characters will counted for
+the truncation point. The reason why "html" is probably a poor choice
+is that you might set what you believe to be a reasonable truncation
+length of 20 chars and get an HTML tag like E<lt>a
+href="http://blah.blah.boo/longish/path/to/resource... and end up with
+no useful output.
+
+Another problem is that the truncate might fall inside an attribute,
+like the "href" above, which means that attribute will necessarily be
+excluded, quite probably rendering the remaining tag invalid so the
+entire tag must be tossed out to preserve well-formedness.
+
+But the best reason not to use "html" right now is it's not supported
+yet. It probably will be sometime in the future but unless you send a
+patch to do it, it will be awhile. It would be useful, for example to
+keep fixed length database records containing HTML truncated validly,
+but it's not something I plan to use personally so it will come last.
+
+=cut
+
+sub style {
+    my ( $self, $style ) = @_;
+    return $self->{_style} unless defined $style;
+
+    croak "'html' style is not yet supported, sorry!"
+        if $style eq 'html';
+
+    croak "Value for style must be either 'text' or 'html'"
+        unless $style =~ /^text|html$/;
+
+    $self->{_style } = $style;
+}
 
 
 =head1 TO DO
@@ -490,11 +496,9 @@ L<Template>, and L<Text::Truncate>.
 
 L<HTML::Scrubber> and L<HTML::Sanitizer>.
 
-L<HTML::FillInForm> (note about...).
-
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2005 Ashley Pond V, all rights reserved.
+Copyright 2005-2006 Ashley Pond V, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
@@ -502,4 +506,6 @@ under the same terms as Perl itself.
 =cut
 
 1; # End of HTML::Truncate
+
+# L<HTML::FillInForm> (note about...). 321
 

@@ -1,5 +1,20 @@
 Revision history for HTML-Truncate
 
+0.09    20060304 1247
+        - Ryo Okamoto reported two bugs (object needs its renewed text
+          reset per truncate call and pointed out that the chars vs
+          percent wasn't clear enough or bomb-proof). Also suggested
+          different behavior for dropping trailing tags if they've
+          lost their content (i.e., dropping the <b>\Z instead of
+          doing <b>...</b>).
+        - So calls to chars() now clears the percent() and vice versa.
+        - New test file "countdown" from Ryo Okamoto added.
+        - POD updates to reflect changes.
+        - Took out defined check on chars. Zero should not be allowed.
+        - Added an "if" clause to the length padding check.
+        - Returning undef if percent() is called when it's unset and
+          not being set.
+
 0.08    20060228 1622
         - Fixed year in Change entry below (from 2003).
         - Fixed percent to not allow a 0%.

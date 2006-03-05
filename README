@@ -1,6 +1,6 @@
 HTML-Truncate
 
-[This is alpha software.]
+[This is beta software.]
 
 When working with text it is convenient and common to want to truncate
 strings to make them fit a desired context. E.g., you might have a

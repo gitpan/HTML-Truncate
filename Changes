@@ -1,5 +1,10 @@
 Revision history for HTML-Truncate
 
+0.10    20060304 1750
+        - Updated "alpha" --> "beta" in README.
+        - Removed .cvsignore from MANIFEST and put in MANIFEST.skip.
+        - Added TT recipe to POD.
+
 0.09    20060304 1247
         - Ryo Okamoto reported two bugs (object needs its renewed text
           reset per truncate call and pointed out that the chars vs

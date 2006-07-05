@@ -8,11 +8,12 @@ WriteMakefile(
     VERSION_FROM        => 'lib/HTML/Truncate.pm',
     ABSTRACT_FROM       => 'lib/HTML/Truncate.pm',
     PL_FILES            => {},
-    PREREQ_PM => {
+    PREREQ_PM => { 
+        'HTML::TokeParser' => 0,
+        'HTML::Tagset' => 0,
         'Test::More' => 0,
         'Carp' => 0,
         'HTML::Entities' => 0,
-        'HTML::TokeParser' => 0,
         'FindBin' => 0,
         'File::Spec' => 0,
     },

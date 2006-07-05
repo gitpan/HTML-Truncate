@@ -9,5 +9,6 @@ t/00-load.t
 t/countdown.t
 t/pod-coverage.t
 t/pod.t
+t/repair.t
 t/synopsis.t
 t/truncate_html.t

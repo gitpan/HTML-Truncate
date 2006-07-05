@@ -1,5 +1,13 @@
 Revision history for HTML-Truncate
 
+0.11    200607
+        - kevinr: Added the 'repair' option, allowing you to tell
+          HTML::Truncate to close unmatched open tags and discard
+          unmatched close tags, with POD and tests.
+        - Added HTML::Tagset to prereqs; it's not used directly but
+          caused an error on my clean perl install.
+        - Fixed a couple of POD spelling errors and typos.
+
 0.10    20060304 1750
         - Updated "alpha" --> "beta" in README.
         - Removed .cvsignore from MANIFEST and put in MANIFEST.skip.

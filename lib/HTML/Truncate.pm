@@ -12,11 +12,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.10
+0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 ABSTRACT
 
@@ -86,7 +86,7 @@ sub new {
     my $class = shift;
 
     my %stand_alone = map { $_ => 1 } qw( br img hr input link base
-                                          meta area );
+                                          meta area param );
 
     my %skip = map { $_ => 1 } qw( head script form iframe object
                                    embed title style base link meta );
@@ -99,6 +99,7 @@ sub new {
         _style    => 'text',
         _ellipsis => '&#8230;',
         _raw_html => '',
+        _repair   => undef,
         _skip_tags => \%skip,
         _stand_alone_tags => \%stand_alone,
     }, $class;
@@ -230,7 +231,7 @@ returns undef. The two optional arguments may be preset with the
 methods C<chars> (or C<percent>) and C<ellipsis>.
 
 Valid nesting of tags is required (alla XHTML). Therefore some old
-HTML habits like E<lt>p<gt> without a E<lt>/Pa<gt> are not supported
+HTML habits like E<lt>pE<gt> without a E<lt>/pE<gt> are not supported
 and will cause a fatal error.
 
 Certain tags are omitted by default from the truncated output. There
@@ -297,10 +298,30 @@ sub truncate {
             my $open  = pop @tag_q;
             my $close = $token->[1];
             unless ( $open eq $close ) {
-                my $nearby = substr($self->{_renewed},
-                                    length($self->{_renewed}) - 15,
-                                    15);
-                croak qq|<$open> closed by </$close> near "$nearby"|;
+                if ($self->{_repair}) {
+                    my @unmatched;
+                    push @unmatched, $open if defined $open;
+                    while (my $temp = pop @tag_q) {
+                        if ($temp eq $close) {
+                            while (my $add = shift @unmatched) {
+                                $self->{_renewed} .= "</$add>";
+                            }
+                            $self->{_renewed} .= "</$temp>";
+                            next TOKENS;
+                        }
+                        else {
+                            push @unmatched, $temp;
+                        }
+                    }
+                    push @tag_q, reverse @unmatched;
+                    next TOKENS;        # silently drop unmatched close tags
+                }
+                else {
+                    my $nearby = substr($self->{_renewed},
+                                        length($self->{_renewed}) - 15,
+                                        15);
+                    croak qq|<$open> closed by </$close> near "$nearby"|;
+                }
             }
             $self->{_renewed} .= $token->[-1];
         }
@@ -348,7 +369,7 @@ sub truncate {
 
 =head2 $ht->add_skip_tags( qw( tag list ) )
 
-Put one or more new tags into the list of those to be ommitted from
+Put one or more new tags into the list of those to be omitted from
 truncated output. An example of when you might like to use this is if
 you're thumbnailing articles and they start with C<< <h1>title</h1> >>
 or such before the article body. The heading level would be absurd
@@ -383,6 +404,28 @@ sub dont_skip_tags {
             if ref $_;
         carp "$_ was not set to be skipped"
             unless delete $self->{_skip_tags}{$_};
+    }
+}
+
+=head2 $ht->repair
+
+Set/get, true/false.  If true, will attempt to repair unclosed HTML tags by
+adding close-tags as late as possible (eg. C<< <i><b>foobar</i> >> becomes 
+C<< <i><b>foobar</b></i> >>).  Unmatched close tags are dropped 
+(C<< foobar</b> >> becomes C<< foobar >>).
+
+=cut
+
+sub repair {
+    my $self = shift;
+    if ( @_ )
+    {
+        $self->{_repair} = shift;
+        return 1; # say we did it, even if untrue value
+    }
+    else
+    {
+        return $self->{_repair};
     }
 }
 
@@ -456,7 +499,7 @@ sub style {
 }
 
 
-=head1 COOKBOOK (well, A recipe)
+=head1 COOKBOOK (well, a recipe)
 
 =head2 Template Toolkit filter
 
@@ -534,6 +577,10 @@ L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=HTML-Truncate>. I
 will get the ticket, and then you'll automatically be notified of
 progress as I make changes.
 
+=head1 THANKS TO
+
+Kevin Riggle for the C<repair> function; patch, POD, and tests.
+
 =head1 SEE ALSO
 
 L<HTML::Entities>, L<HTML::TokeParser>, the "truncate" filter in
@@ -545,12 +592,11 @@ L<HTML::Scrubber> and L<HTML::Sanitizer>.
 
 Copyright 2005-2006 Ashley Pond V, all rights reserved.
 
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+This program is free software; you can redistribute it or modify it or
+both under the same terms as Perl itself.
 
 =cut
 
 1; # End of HTML::Truncate
 
-# L<HTML::FillInForm> (note about...). 321
 

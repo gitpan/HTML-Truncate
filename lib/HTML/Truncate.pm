@@ -1,10 +1,13 @@
 package HTML::Truncate;
 
 use strict;
-
+use warnings;
 use HTML::TokeParser;
+use HTML::Tagset ();
 use HTML::Entities ();
 use Carp;
+use List::Util qw( first );
+no warnings "uninitialized";
 
 =head1 NAME
 
@@ -12,11 +15,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.11
+0.12
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = "0.12";
 
 =head1 ABSTRACT
 
@@ -24,14 +27,23 @@ When working with text it is convenient and common to want to truncate
 strings to make them fit a desired context. E.g., you might have a
 menu that is only 100px wide and prefer text doesn't wrap so you'd
 truncate it around 15-30 characters, depending on preference and
-typeface size. This is trivial with plain text using C<substr> but
+typeface size. This is trivial with plain text using L<substr> but
 with HTML it is somewhat difficult because whitespace has fluid
 significance and open tags that are not properly closed destroy
 well-formedness and can wreck an entire layout.
 
-HTML::Truncate attempts to account for those two problems by padding
-truncation for spacing and entities and closing any tags that remain
-open at the point of truncation.
+L<HTML::Truncate> attempts to account for those two problems by
+padding truncation for spacing and entities and closing any tags that
+remain open at the point of truncation.
+
+=head2 NOTA BENE
+
+Previous versions did B<not> truncate characters to any good degree of
+accuracy so the internals were rewritten a bit starting with 0.12. It
+might still not be ideal but it is much closer than previously.
+
+Backwards compatibility from 0.11 and earlier is broken in renaming
+the method L</utf8> to L</utf8_mode>.
 
 =head1 SYNOPSIS
 
@@ -44,21 +56,22 @@ open at the point of truncation.
  my $html_truncate = HTML::Truncate->new();
  $html_truncate->chars(20);
  $html_truncate->ellipsis($readmore);
- print $html_truncate->truncate($html), $/;
+ print $html_truncate->truncate($html);
 
  # or
 
- my $ht = HTML::Truncate->new(utf => 1,
-                              chars => 1_000,
+ use Encode;
+ my $ht = HTML::Truncate->new( utf8_mode => 1,
+                               chars => 1_000,
                               );
- print $ht->truncate($html), $/;
+ print Encode::encode_utf8( $ht->truncate($html) );
 
 =head1 XHTML
 
-This module is designed to only work on XHTML-style nested tags. More
+This module is designed to work with XHTML-style nested tags. More
 below.
 
-=head1 WHITESPACE & ENTITIES
+=head1 WHITESPACE AND ENTITIES
 
 Repeated natural whitespace (i.e., "\s+" and not " &nbsp; ") in HTML
 -- with rare exception (pre tags or user defined styles) -- is not
@@ -70,7 +83,9 @@ also normalized. The following is only counted 14 chars long.
 
 =head1 METHODS
 
-=head2 HTML::Truncate->new
+=over 4
+
+=item * HTML::Truncate->new
 
 Can take all the methods as hash style args. "percent" and "chars" are
 incompatible so don't use them both. Whichever is set most recently
@@ -82,68 +97,75 @@ will erase the other.
 
 =cut
 
+our %skip = ( head => 1,
+              script => 1,
+              form => 1,
+              iframe => 1,
+              object => 1,
+              embed => 1,
+              title => 1,
+              style => 1,
+              base => 1,
+              link => 1,
+              meta => 1,
+            );
+
+
 sub new {
     my $class = shift;
 
-    my %stand_alone = map { $_ => 1 } qw( br img hr input link base
-                                          meta area param );
-
-    my %skip = map { $_ => 1 } qw( head script form iframe object
-                                   embed title style base link meta );
-
     my $self = bless
     {
-        _chars    => 100,
-        _percent  => undef,
-        _utf8     => undef,
-        _style    => 'text',
-        _ellipsis => '&#8230;',
-        _raw_html => '',
-        _repair   => undef,
+        _chars     => 100,
+        _percent   => undef,
+        _cleanly   => qr/[\s[:punct:]]+\z/,
+        _on_space  => undef,
+        _utf8_mode => undef,
+        _ellipsis  => '&#8230;',
+        _raw_html  => '',
+        _repair    => undef,
         _skip_tags => \%skip,
-        _stand_alone_tags => \%stand_alone,
     }, $class;
 
     while ( my ( $k, $v ) = splice(@_, 0, 2) )
     {
-        next unless exists $self->{"_$k"};
+        croak "No such method or attribute '$k'" unless exists $self->{"_$k"};
         $self->$k($v);
     }
     return $self;
 }
 
-=head2 $ht->utf8
+=item * $ht->utf8_mode
 
-Set/get, true/false. If utf8 is set, entities will be transformed with
-C<HTML::Entity::decode> and the default ellipsis will be a literal
-ellipsis and not the default of C<&#8230;>.
+Set/get, true/false. If C<utf8_mode> is set, C<utf8_mode(1)> is also
+set in the underlying L<HTML::Parser>, entities will be transformed
+with L<decode|HTML::Entity/decode> and the default ellipsis will be a
+literal ellipsis and not the default of C<&#8230;>.
 
 =cut
 
-sub utf8 {
+sub utf8_mode {
     my $self = shift;
     if ( @_ )
     {
-        $self->{_utf8} = shift;
-        return 1; # say we did it, even if untrue value
+        $self->{_utf8_mode} = shift;
+        return 1; # say we did it, even if setting untrue value
     }
     else
     {
-        return $self->{_utf8};
+        return $self->{_utf8_mode};
     }
 }
 
-=head2 $ht->chars
+=item * $ht->chars
 
 Set/get. The number of characters remaining after truncation,
-including the C<ellipsis>. The C<style> attribute determines whether
-the chars will only count text or HTML and text. Only "text" is
-supported currently.
+B<excluding> the L</ellipsis>.
 
 Entities are counted as single characters. E.g., C<&copy;> is one
 character for truncation counts.
 
-Default is "100." Side-effect: clears any C<percent> that has been
+Default is "100." Side-effect: clears any L</percent> that has been
 set.
 
 =cut
@@ -151,20 +173,21 @@ set.
 sub chars {
     my ( $self, $chars ) = @_;
     return $self->{_chars} unless defined $chars;
+    $chars > 0 or croak "You must truncate to at least 1 character";
     $chars =~ /^(?:[1-9][_\d]*|0)$/
         or croak "Specified chars must be a number";
     $self->{_percent} = undef; # no conflict allowed
     $self->{_chars} = $chars;
 }
 
-=head2 $ht->percent
+=item * $ht->percent
 
 Set/get. A percentage to keep while truncating the rest. For a
 document of 1,000 chars, percent('15%') and chars(150) would be
 equivalent. The actual amount of character that the percent represents
 cannot be known until the given HTML is parsed.
 
-Side-effect: clears any C<chars> that has been set.
+Side-effect: clears any L</chars> that has been set.
 
 =cut
 
@@ -185,13 +208,12 @@ sub percent {
     $self->{_percent} = $1 / 100;
 }
 
-=head2 $ht->ellipsis
+=item * $ht->ellipsis
 
-Set/get. Ellipsis in this case means--
+Set/get. Ellipsis in this case L<means|http://www.answers.com/topic/ellipsis> --
 
- The omission of a word or phrase necessary for a complete syntactical
- construction but not necessary for understanding.
-                            http://www.answers.com/topic/ellipsis
+    The omission of a word or phrase necessary for a complete
+    syntactical construction but not necessary for understanding.
 
 What it will probably mean in most real applications is "read more."
 The default is C<&#8230;> which if the utf8 flag is true will render
@@ -210,7 +232,7 @@ sub ellipsis {
     {
         $self->{_ellipsis} = shift;
     }
-    elsif ( $self->utf8() )
+    elsif ( $self->utf8_mode() )
     {
         return HTML::Entities::decode($self->{_ellipsis});
     }
@@ -220,7 +242,7 @@ sub ellipsis {
     }
 }
 
-=head2 $ht->truncate($html)
+=item * $ht->truncate($html)
 
 Also can be called with arguments--
 
@@ -228,7 +250,7 @@ Also can be called with arguments--
 
 No arguments are strictly required. Without HTML to operate upon it
 returns undef. The two optional arguments may be preset with the
-methods C<chars> (or C<percent>) and C<ellipsis>.
+methods L</chars> (or L</percent>) and L</ellipsis>.
 
 Valid nesting of tags is required (alla XHTML). Therefore some old
 HTML habits like E<lt>pE<gt> without a E<lt>/pE<gt> are not supported
@@ -241,133 +263,203 @@ will be a mechanism to custom tailor these--
 
 =item skipped tags
 
+These will note be included in truncated output by default.
+
  <head>...</head> <script>...</script> <form>...</form>
  <iframe></iframe> <title>...</title> <style>...</style>
  <base/> <link/> <meta/>
 
-=item tags allowed to self-close (stand alone)
+=item tags allowed to self-close
 
- <br/> <img/> <hr/> <input/> <link/> <base/>
+See L<emptyElement|HTML::Tagset/emptyElement> in L<HTML::Tagset>.
 
 =back
 
 =cut
 
+sub _chars_or_percent {
+    my ( $self, $which ) = @_;
+    if ( $which =~ /\%\z/ )
+    {
+        $self->percent($which);
+    }
+    else
+    {
+        $self->chars($which);
+    }
+}
+
 sub truncate {
     my $self = shift;
-    my ( $html, $chars_or_perc, $ellipsis ) = @_;
+    $self->{_raw_html} = \$_[0];
+    shift || return;
 
-    return unless $html;
+    $self->_chars_or_percent(+shift) if @_;
+    $self->ellipsis(+shift) if @_;
 
-    $self->{_renewed}  = '';    # reset
-    $self->{_raw_html} = \$html;
+    my @tag_q;
+    my $renew = "";
+    my $total = 0;
+    my $previous_token;
+    my $next_token;
 
-    if ( $self->percent() or
-         $chars_or_perc and
-         $chars_or_perc =~ /\d+\%$/ )
-    {
-        $self->percent($chars_or_perc);
-        $self->_load_chars_from_percent();
-    }
-    elsif ( $chars_or_perc )
-    {
-        $self->chars($chars_or_perc);
-    }
-
-    $self->ellipsis($ellipsis) if defined $ellipsis;
+#    my $tmp_ellipsis = $self->ellipsis;
+#    $tmp_ellipsis =~ s/<\w[^>]+>//g; # Naive html strip.
+#    HTML::Entities::encode($tmp_ellipsis);
+    my $chars = $self->{_chars};# + length $tmp_ellipsis;
 
     my $p = HTML::TokeParser->new( $self->{_raw_html} );
+    $p->unbroken_text(1);
+    $p->utf8_mode( $self->utf8_mode );
 
-    my ( @tag_q );
-    $self->{_renew} = '';
-    my $chars = $self->chars();
-
-  TOKENS:
+  TOKEN:
     while ( my $token = $p->get_token() )
     {
+        my @nexttoken;
+        NEXT_TOKEN:
+        while ( my $next = $p->get_token() )
+        {
+            push @nexttoken, $next;
+            if ( $next->[0] eq 'S' )
+            {
+                $next_token = $next;
+                last NEXT_TOKEN;
+            }
+        }
+        $p->unget_token(@nexttoken);
+        $previous_token = $token if $token->[0] eq 'E';
+
+#        print "   Queue: ", join ":", @tag_q;        print $/;
+#        print "Previous: $previous_token->[1]\n";
+#        print "      IN: $token->[1]\n";
+#        print "    Next: $next_token->[1]\n\n";
+
         if ( $token->[0] eq 'S' )
         {
             # _callback_for...? 321
-            next TOKENS if $self->{_skip_tags}{$token->[1]};
-            push @tag_q, $token->[1] unless $self->{_stand_alone_tags}{$token->[1]};
-            $self->{_renewed} .= $token->[-1];
+            next TOKEN if $self->{_skip_tags}{$token->[1]};
+            push @tag_q, $token->[1] unless $HTML::Tagset::emptyElement{$token->[1]};
+            $renew .= $token->[-1];
         }
         elsif ( $token->[0] eq 'E' )
         {
-            next TOKENS if $self->{_skip_tags}{$token->[1]};
+            next TOKEN if $self->{_skip_tags}{$token->[1]};
             my $open  = pop @tag_q;
             my $close = $token->[1];
-            unless ( $open eq $close ) {
-                if ($self->{_repair}) {
+            unless ( $open eq $close )
+            {
+                if ( $self->{_repair} )
+                {
                     my @unmatched;
-                    push @unmatched, $open if defined $open;
-                    while (my $temp = pop @tag_q) {
-                        if ($temp eq $close) {
-                            while (my $add = shift @unmatched) {
-                                $self->{_renewed} .= "</$add>";
+                    push @unmatched, $open if $open;
+                    while ( my $temp = pop @tag_q )
+                    {
+                        if ( $temp eq $close )
+                        {
+                            while ( my $add = shift @unmatched )
+                            {
+                                $renew .= "</$add>";
                             }
-                            $self->{_renewed} .= "</$temp>";
-                            next TOKENS;
+                            $renew .= "</$temp>";
+                            next TOKEN;
                         }
-                        else {
+                        else
+                        {
                             push @unmatched, $temp;
                         }
                     }
                     push @tag_q, reverse @unmatched;
-                    next TOKENS;        # silently drop unmatched close tags
+                    next TOKEN;        # silently drop unmatched close tags
                 }
-                else {
-                    my $nearby = substr($self->{_renewed},
-                                        length($self->{_renewed}) - 15,
+                else
+                {
+                    my $nearby = substr($renew,
+                                        length($renew) - 15,
                                         15);
                     croak qq|<$open> closed by </$close> near "$nearby"|;
                 }
             }
-            $self->{_renewed} .= $token->[-1];
+            $renew .= $token->[-1];
         }
         elsif ( $token->[0] eq 'T' )
         {
-            next TOKENS if $token->[2];
-            my $txt = $token->[1];
-            $self->{_renewed} .= $txt and next if $txt =~ /^\s+$/;
+            next TOKEN if $token->[2]; # DATA
+            my $txt = HTML::Entities::decode($token->[1]);
 
-            my $length = length($txt);
-            for ( $txt =~ /
-                           \A(\s+)(?=\S)
-                           |
-                           (?<=\S)(\s+)\Z
-                           |
-                           (?<=\&)(\#\d+;)
-                           |
-                           (?<=\&)([[:alpha:]]{2,5};)
-                           |
-                           \s(\s+)
-                           /gx )
+            unless ( first { $_ eq 'pre' } @tag_q ) # We're not somewhere inside a <pre/>
             {
-                $length -= length($1) if $1; # padding
+                $txt =~ s/\s+/ /g;
+
+                if ( ! $HTML::Tagset::isPhraseMarkup{$tag_q[-1]} # in flow
+                     and
+                     ! $HTML::Tagset::isPhraseMarkup{$previous_token->[1]}
+                     )
+                {
+                    $txt =~ s/\A //;
+                }
+
+                if ( ! $HTML::Tagset::isPhraseMarkup{$tag_q[-1]} # in flow
+                     and
+                     ! $HTML::Tagset::isPhraseMarkup{$next_token->[1]}
+                     )
+                {
+                    $txt =~ s/ \z//;
+                }
             }
 
-            if ( $length > $chars )
+            my $current_length = length($txt);
+            $total += $current_length;
+
+            if ( $total >= $chars )
             {
-                $self->{_renewed} .= substr($txt, 0, ( $chars ) );
-                $self->{_renewed} =~ s/\s+\Z//;
-                $self->{_renewed} .= $self->ellipsis();
-                last TOKENS;
+                $total -= $current_length;
+
+                my $chars_to_keep = $chars - $total;
+                my $keep = "";
+                if ( $self->on_space )
+                {
+                    ( $keep ) = $txt =~ /\A(.{0,$chars_to_keep}\s?)(?=\s|\z)/;
+                    $keep =~ s/\s+\z//;
+                }
+                else
+                {
+                    $keep = substr($txt, 0, $chars_to_keep);
+                }
+
+                if ( my $cleaner = $self->cleanly )
+                {
+                    $keep =~ s/$cleaner//;
+                }
+
+                if ( $keep )
+                {
+                    $renew .= $self->utf8_mode ?
+                        $keep : HTML::Entities::encode($keep);
+                }
+
+                $renew .= $self->ellipsis();
+                last TOKEN;
             }
             else
             {
-                $self->{_renewed} .= $txt;
-                $chars -= $length;
+                $renew .= $token->[1];
             }
         }
-    }
-    $self->{_renewed} .= join('', map {"</$_>"} reverse @tag_q);
+    } #  TOKEN block ends
 
-    return $self->{_renewed} if defined wantarray;
+    $renew .= join('', map {"</$_>"} reverse @tag_q);
+
+    if ( defined wantarray )
+    {
+        return $renew;
+    }
+    else
+    {
+        ${$self->{_raw_html}} = $renew;
+    }
 }
 
-
-=head2 $ht->add_skip_tags( qw( tag list ) )
+=item * $ht->add_skip_tags( qw( tag list ) )
 
 Put one or more new tags into the list of those to be omitted from
 truncated output. An example of when you might like to use this is if
@@ -389,8 +481,7 @@ sub add_skip_tags {
     }
 }
 
-
-=head2 $ht->dont_skip_tags( qw( tag list ) )
+=item * $ht->dont_skip_tags( qw( tag list ) )
 
 Takes tags out of the current list to be omitted from truncated output.
 
@@ -407,12 +498,12 @@ sub dont_skip_tags {
     }
 }
 
-=head2 $ht->repair
+=item * $ht->repair
 
-Set/get, true/false.  If true, will attempt to repair unclosed HTML tags by
-adding close-tags as late as possible (eg. C<< <i><b>foobar</i> >> becomes 
-C<< <i><b>foobar</b></i> >>).  Unmatched close tags are dropped 
-(C<< foobar</b> >> becomes C<< foobar >>).
+Set/get, true/false. If true, will attempt to repair unclosed HTML
+tags by adding close-tags as late as possible (eg. C<<
+<i><b>foobar</i> >> becomes C<< <i><b>foobar</b></i> >>). Unmatched
+close tags are dropped (C<< foobar</b> >> becomes C<< foobar >>).
 
 =cut
 
@@ -429,8 +520,6 @@ sub repair {
     }
 }
 
-# 
-
 sub _load_chars_from_percent {
     my $self = shift;
     my $p = HTML::TokeParser->new( $self->{_raw_html} );
@@ -445,7 +534,6 @@ sub _load_chars_from_percent {
     }
     $self->chars( int( $txt_length * $self->{_percent} ) );
 }
-
 
 sub _count_visual_chars { # private function
     my $to_count = shift;
@@ -462,48 +550,58 @@ sub _count_visual_chars { # private function
 #    }
 #}
 
-=head2 $ht->style
 
-Set/get. Either the default "text" or "html." (N.b.: only "text" is
-supported so far.) This determines which characters will counted for
-the truncation point. The reason why "html" is probably a poor choice
-is that you might set what you believe to be a reasonable truncation
-length of 20 chars and get an HTML tag like E<lt>a
-href="http://blah.blah.boo/longish/path/to/resource... and end up with
-no useful output.
+=item * $ht->on_space(1)
 
-Another problem is that the truncate might fall inside an attribute,
-like the "href" above, which means that attribute will necessarily be
-excluded, quite probably rendering the remaining tag invalid so the
-entire tag must be tossed out to preserve well-formedness.
-
-But the best reason not to use "html" right now is it's not supported
-yet. It probably will be sometime in the future but unless you send a
-patch to do it, it will be awhile. It would be useful, for example to
-keep fixed length database records containing HTML truncated validly,
-but it's not something I plan to use personally so it will come last.
+This will make the truncation back up to the first space it finds so
+it doesn't truncate in the the middle of a word.
 
 =cut
 
-sub style {
-    my ( $self, $style ) = @_;
-    return $self->{_style} unless defined $style;
-
-    croak "'html' style is not yet supported, sorry!"
-        if $style eq 'html';
-
-    croak "Value for style must be either 'text' or 'html'"
-        unless $style =~ /^text|html$/;
-
-    $self->{_style } = $style;
+sub on_space {
+    my $self = shift;
+    if ( @_ )
+    {
+        $self->{_on_space} = shift;
+        return 1; # say we did it, even if setting untrue value
+    }
+    else
+    {
+        return $self->{_on_space};
+    }
 }
 
+
+=item * $ht->cleanly(qr/[\s[:punct:]]+\z/)
+
+This is on by default and the default cleaning regular expression is
+shown. It will make the truncation strip any trailing spacing and
+punctuation so you don't get things like "The End...." or "What? ..."
+You can cancel it with C<<$ht->cleanly(undef)>> or provide your own
+regular expression.
+
+=cut
+
+sub cleanly {
+    my $self = shift;
+    if ( @_ )
+    {
+        $self->{_cleanly} = shift;
+        return 1; # say we did it, even if setting untrue value
+    }
+    else
+    {
+        return $self->{_cleanly};
+    }
+}
+
+=back
 
 =head1 COOKBOOK (well, a recipe)
 
 =head2 Template Toolkit filter
 
-For excerpting HTML in your Templates. Note the C<add_skip_tags> which
+For excerpting HTML in your Templates. Note the L</add_skip_tags> which
 is set to drop any images from the truncated output.
 
  use Template;
@@ -534,24 +632,14 @@ is set to drop any images from the truncated output.
 
 Then in your templates you can do things like this:
 
-
  [% FOR item IN search_results %]
- <div class="searchResult">
- <a href="[% item.uri %]">[% item.title %]</a><br />
- [% item.body | truncate_html(200) %]
- </div>
+   <div class="searchResult">
+     <a href="[% item.uri %]">[% item.title %]</a><br />
+     [% item.body | truncate_html(200) %]
+   </div>
  [% END %]
 
-
 See also L<Template::Filters>.
-
-=head1 TO DO
-
-Many more tests. Allow new stand alone tags to be added. Go through
-entire dist and make sure everything is kosher (autogenerated with the
-lovely L<Module::Starter>). Reorganize POD to read in best learning
-order. Make sure the padding check is working across wide range of
-cases. "html" style truncating (maybe not?).
 
 =head1 AUTHOR
 
@@ -559,7 +647,7 @@ Ashley Pond V, C<< <ashley@cpan.org> >>.
 
 =head1 LIMITATIONS
 
-There are places where this will break down right now. I'll pad out
+There may be places where this will break down right now. I'll pad out
 possible edge cases as I find them or they are sent to me via the CPAN
 bug ticket system.
 
@@ -579,7 +667,9 @@ progress as I make changes.
 
 =head1 THANKS TO
 
-Kevin Riggle for the C<repair> function; patch, POD, and tests.
+Kevin Riggle for the L</repair> functionality; patch, Pod, and tests.
+
+Lorenzo Iannuzzi for the L</on_space> functionality.
 
 =head1 SEE ALSO
 
@@ -590,13 +680,36 @@ L<HTML::Scrubber> and L<HTML::Sanitizer>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2005-2006 Ashley Pond V, all rights reserved.
+Copyright 2005-2008 Ashley Pond V.
 
 This program is free software; you can redistribute it or modify it or
 both under the same terms as Perl itself.
 
+=head1 DISCLAIMER OF WARRANTY
+
+Because this software is licensed free of charge, there is no warranty
+for the software, to the extent permitted by applicable law. Except
+when otherwise stated in writing the copyright holders or other
+parties provide the software "as is" without warranty of any kind,
+either expressed or implied, including, but not limited to, the
+implied warranties of merchantability and fitness for a particular
+purpose. The entire risk as to the quality and performance of the
+software is with you. Should the software prove defective, you assume
+the cost of all necessary servicing, repair, or correction.
+
+In no event unless required by applicable law or agreed to in writing
+will any copyright holder, or any other party who may modify and/or
+redistribute the software as permitted by the above licence, be liable
+to you for damages, including any general, special, incidental, or
+consequential damages arising out of the use or inability to use the
+software (including but not limited to loss of data or data being
+rendered inaccurate or losses sustained by you or third parties or a
+failure of the software to operate with any other software), even if
+such holder or other party has been advised of the possibility of such
+damages.
+
 =cut
 
-1; # End of HTML::Truncate
+1;
 
 

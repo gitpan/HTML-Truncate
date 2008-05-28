@@ -1,17 +1,46 @@
 Revision history for HTML-Truncate
 
+0.12    20080528
+        - Discoered it didn't work nearly as well (regarding counting
+          of "visible" output as I thought so I rewrote it. Three
+          times actually but ended up with something similar to the
+          original in the end, mostly because, bizarrely,
+          HTML::TreeBuilder does not make text into nodes. This makes
+          the module half useless. If it only did that, it would
+          simple to have redone this module with it in a bombproof
+          way. I considered redoing it with XML::LibXML to achieve the
+          same thing and might add that in eventually with an "eval
+          require" kind of check.
+        - Added some accounting for <pre/> tags to be taken literally.
+        - Lorenzo Iannuzzi suggested a way to clip to word-ish
+          boundaries instead of truncating leaving hanging space. I
+          already do something similar in TT2 so I kept his as
+          on_space() and mine as cleanly(), which can accept a regex
+          if you know how you want to handle it better than the
+          default.
+        - Took out style setting, it was pointless, goofy, and
+          antithetical to the point of the module.
+        - Was going to take out "beta" notice - but rewrote too much
+          of it to do so.
+        - Moved to Module::Install.
+        - Noticed the utf8 ellipsis is tripping up perl 5.6. But I
+          don't want to put a prereq in... maybe skip that test for
+          that version.
+        - Several new tests.
+        - Pod clean up, mild reorg.
+
 0.11    200607
         - kevinr: Added the 'repair' option, allowing you to tell
           HTML::Truncate to close unmatched open tags and discard
-          unmatched close tags, with POD and tests.
+          unmatched close tags, with Pod and tests.
         - Added HTML::Tagset to prereqs; it's not used directly but
           caused an error on my clean perl install.
-        - Fixed a couple of POD spelling errors and typos.
+        - Fixed a couple of Pod spelling errors and typos.
 
 0.10    20060304 1750
         - Updated "alpha" --> "beta" in README.
         - Removed .cvsignore from MANIFEST and put in MANIFEST.skip.
-        - Added TT recipe to POD.
+        - Added TT recipe to Pod.
 
 0.09    20060304 1247
         - Ryo Okamoto reported two bugs (object needs its renewed text
@@ -22,7 +51,7 @@ Revision history for HTML-Truncate
           doing <b>...</b>).
         - So calls to chars() now clears the percent() and vice versa.
         - New test file "countdown" from Ryo Okamoto added.
-        - POD updates to reflect changes.
+        - Pod updates to reflect changes.
         - Took out defined check on chars. Zero should not be allowed.
         - Added an "if" clause to the length padding check.
         - Returning undef if percent() is called when it's unset and
@@ -34,11 +63,12 @@ Revision history for HTML-Truncate
         - Fixed percent bug -- if it was loaded up front instead of in
           the truncate() call, it was being silently dropped for the
           default 100 chars.
-        - Made test path agnostic with File::Spec. Added to reqs.
+        - Made test path agnostic with File::Spec. Added to build
+          prereqs.
         - Fixed bug with default percent being English instead of
           decimal; shouldn't be there at all.
         - Calling it beta now that the known bugs are out; couple
-          other POD tweaks.
+          other Pod tweaks.
 
 0.07    20060228 1130
         - Added embed to skip tags.
@@ -63,19 +93,19 @@ Revision history for HTML-Truncate
           over skip tags and a dummy sub{} for img tags.
 
 0.04    20051222
-        - Couple POD typos/sync-problems fixed.
-        - Another POD typo in Synopsis fixed per Terrence Brannon.
+        - Couple Pod typos/sync-problems fixed.
+        - Another Pod typo in Synopsis fixed per Terrence Brannon.
         - Added synopsis.t to avoid the same type of problem creeping back.
         
 0.03    20051222 1532
         - Added dont_skip_tags and add_skip_tags (not in tests yet).
-        - Built out POD a bit more.
+        - Built out Pod a bit more.
         - Corrected a couple typos below in this document.
 
 0.02    20051222 1325
         - Took out the non-functional functional part at the sober
           suggestion of Mark Stosberg.
-        - Built up POD a bit; note about XHTML-esque input requirement.
+        - Built up Pod a bit; note about XHTML-esque input requirement.
         - Moved stand alone and skip tags into object.
 
 0.01    20051222 0114

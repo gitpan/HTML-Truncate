@@ -3,6 +3,7 @@ NOTES
 \bCVS\b
 \.cvs
 ~
+.tar$
 .gz$
 .bak$
 Makefile$
@@ -12,3 +13,4 @@ MANIFEST.perl$
 ^pm_to_blib
 .DS_Store
 \#
+t/author/

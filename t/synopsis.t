@@ -1,5 +1,3 @@
-#!perl
-
 use strict;
 
 use FindBin;
@@ -25,12 +23,11 @@ close F;
 ok( $synopsis,
     "Got code out of the SYNOPSIS space to evaluate" );
 
-# diag( $synopsis ); # if you want to see it
-
-eval "use warnings; use strict; $synopsis";
-
-diag( $@ . "\n" . $synopsis ) if $@;
-
-ok( ! $@, "Synopsis code sample eval'd" );
+diag( $synopsis ) if $ENV{TEST_VERBOSE};
 
 
+my $ok = eval "$synopsis; print qq{\n}; 1;";
+
+ok( $ok,  "Synopsis eval'd" );
+
+diag( $@ . "\n" . $synopsis ) if $@ and $ENV{TEST_VERBOSE};

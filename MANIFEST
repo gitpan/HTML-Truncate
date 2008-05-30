@@ -17,12 +17,14 @@ MANIFEST.SKIP
 META.yml
 README
 t/00-load.t
+t/author/descending_truncate.t
 t/countdown-dirty.t
 t/countdown.t
 t/on_space.t
-t/pod-coverage.t
-t/pod.t
 t/pre.t
 t/repair.t
 t/synopsis.t
 t/truncate_html.t
+xt/perl-critic.t
+xt/pod-coverage.t
+xt/pod.t

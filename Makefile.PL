@@ -2,7 +2,7 @@ use strict;
 use inc::Module::Install;
 
 name "HTML-Truncate";
-
+license 'perl';
 all_from "lib/HTML/Truncate.pm";
 
 # requires "perl" => 5.8;

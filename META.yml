@@ -1,17 +1,23 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         HTML-Truncate
-version:      0.11
-version_from: lib/HTML/Truncate.pm
-installdirs:  site
-requires:
-    Carp:                          0
-    File::Spec:                    0
-    FindBin:                       0
-    HTML::Entities:                0
-    HTML::Tagset:                  0
-    HTML::TokeParser:              0
-    Test::More:                    0
-
+---
+abstract: '(beta software) truncate HTML by percentage or character count while preserving well-formedness.'
+author:
+  - 'Ashley Pond V, C<< <ashley@cpan.org> >>.'
+build_requires:
+  File::Spec: 0
+  Test::More: 0.5
 distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+generated_by: 'Module::Install version 0.710'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: HTML-Truncate
+no_index:
+  directory:
+    - inc
+    - t
+requires:
+  HTML::Tagset: 3
+  HTML::TokeParser: 2
+  List::Util: 1
+version: 0.13

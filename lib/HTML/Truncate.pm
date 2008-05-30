@@ -15,11 +15,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.12
+0.13
 
 =cut
 
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 
 =head1 ABSTRACT
 
@@ -43,7 +43,7 @@ accuracy so the internals were rewritten a bit starting with 0.12. It
 might still not be ideal but it is much closer than previously.
 
 Backwards compatibility from 0.11 and earlier is broken in renaming
-the method L</utf8> to L</utf8_mode>.
+the method C<utf8> to L</utf8_mode>.
 
 =head1 SYNOPSIS
 
@@ -85,7 +85,7 @@ also normalized. The following is only counted 14 chars long.
 
 =over 4
 
-=item * HTML::Truncate->new
+=item B<new>
 
 Can take all the methods as hash style args. "percent" and "chars" are
 incompatible so don't use them both. Whichever is set most recently
@@ -135,7 +135,7 @@ sub new {
     return $self;
 }
 
-=item * $ht->utf8_mode
+=item B<utf8_mode>
 
 Set/get, true/false. If C<utf8_mode> is set, C<utf8_mode(1)> is also
 set in the underlying L<HTML::Parser>, entities will be transformed
@@ -157,7 +157,7 @@ sub utf8_mode {
     }
 }
 
-=item * $ht->chars
+=item B<chars>
 
 Set/get. The number of characters remaining after truncation,
 B<excluding> the L</ellipsis>.
@@ -180,7 +180,7 @@ sub chars {
     $self->{_chars} = $chars;
 }
 
-=item * $ht->percent
+=item B<percent>
 
 Set/get. A percentage to keep while truncating the rest. For a
 document of 1,000 chars, percent('15%') and chars(150) would be
@@ -208,12 +208,13 @@ sub percent {
     $self->{_percent} = $1 / 100;
 }
 
-=item * $ht->ellipsis
+=item B<ellipsis>
 
-Set/get. Ellipsis in this case L<means|http://www.answers.com/topic/ellipsis> --
+Set/get. Ellipsis in this case means --
 
     The omission of a word or phrase necessary for a complete
     syntactical construction but not necessary for understanding.
+                         http://www.answers.com/topic/ellipsis
 
 What it will probably mean in most real applications is "read more."
 The default is C<&#8230;> which if the utf8 flag is true will render
@@ -242,11 +243,23 @@ sub ellipsis {
     }
 }
 
-=item * $ht->truncate($html)
+=item B<truncate>
 
-Also can be called with arguments--
+It returns the truncated XHTML if asked for a return value.
 
- $ht->truncate( $html, $chars_or_percent, $ellipsis );
+ my $truncated = $ht->truncate($html);
+
+It will trucate the string in place if no return value is expected
+(L<wantarray> is not defined).
+
+   $ht->truncate($html);
+   print $html;
+
+Also can be called with inline arguments-
+
+   print $ht->truncate( $html,
+                        $chars_or_percent,
+                        $ellipsis );
 
 No arguments are strictly required. Without HTML to operate upon it
 returns undef. The two optional arguments may be preset with the
@@ -261,15 +274,15 @@ will be a mechanism to custom tailor these--
 
 =over 4
 
-=item skipped tags
+=item * Skipped tags
 
 These will note be included in truncated output by default.
 
- <head>...</head> <script>...</script> <form>...</form>
- <iframe></iframe> <title>...</title> <style>...</style>
- <base/> <link/> <meta/>
+   <head>...</head> <script>...</script> <form>...</form>
+   <iframe></iframe> <title>...</title> <style>...</style>
+   <base/> <link/> <meta/>
 
-=item tags allowed to self-close
+=item * Tags allowed to self-close
 
 See L<emptyElement|HTML::Tagset/emptyElement> in L<HTML::Tagset>.
 
@@ -459,7 +472,7 @@ sub truncate {
     }
 }
 
-=item * $ht->add_skip_tags( qw( tag list ) )
+=item B<add_skip_tags( qw( tag list ) )>
 
 Put one or more new tags into the list of those to be omitted from
 truncated output. An example of when you might like to use this is if
@@ -481,7 +494,7 @@ sub add_skip_tags {
     }
 }
 
-=item * $ht->dont_skip_tags( qw( tag list ) )
+=item B<dont_skip_tags( qw( tag list ) )>
 
 Takes tags out of the current list to be omitted from truncated output.
 
@@ -498,7 +511,7 @@ sub dont_skip_tags {
     }
 }
 
-=item * $ht->repair
+=item B<repair>
 
 Set/get, true/false. If true, will attempt to repair unclosed HTML
 tags by adding close-tags as late as possible (eg. C<<
@@ -551,7 +564,7 @@ sub _count_visual_chars { # private function
 #}
 
 
-=item * $ht->on_space(1)
+=item B<on_space>
 
 This will make the truncation back up to the first space it finds so
 it doesn't truncate in the the middle of a word.
@@ -572,13 +585,14 @@ sub on_space {
 }
 
 
-=item * $ht->cleanly(qr/[\s[:punct:]]+\z/)
+=item B<cleanly>
 
-This is on by default and the default cleaning regular expression is
-shown. It will make the truncation strip any trailing spacing and
-punctuation so you don't get things like "The End...." or "What? ..."
-You can cancel it with C<<$ht->cleanly(undef)>> or provide your own
-regular expression.
+Set/get -- a regular expression. This is on by default and the default
+cleaning regular expression is C<cleanly(qr/[\s[:punct:]]+\z/)>. It
+will make the truncation strip any trailing spacing and punctuation so
+you don't get things like "The End...." or "What? ..." You can cancel
+it with C<<$ht->cleanly(undef)>> or provide your own regular
+expression.
 
 =cut
 
@@ -680,7 +694,7 @@ L<HTML::Scrubber> and L<HTML::Sanitizer>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2005-2008 Ashley Pond V.
+Copyright (E<copy>) 2005-2008 Ashley Pond V.
 
 This program is free software; you can redistribute it or modify it or
 both under the same terms as Perl itself.

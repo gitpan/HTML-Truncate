@@ -1,5 +1,12 @@
 Revision history for HTML-Truncate
 
+0.13    20080529
+        - Fixed my build to remove META.yml, 0.12 had the file from
+          0.11.
+        - Reorganized tests with /xt; pod-coverage, perlcritic, etc.
+        - Cleaned up Pod.
+        - Put license in Makefile explicitly.
+
 0.12    20080528
         - Discoered it didn't work nearly as well (regarding counting
           of "visible" output as I thought so I rewrote it. Three

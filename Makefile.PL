@@ -5,8 +5,9 @@ name "HTML-Truncate";
 license 'perl';
 all_from "lib/HTML/Truncate.pm";
 
-# requires "perl" => 5.8;
-# requires "HTML::TreeBuilder" => 3;
+perl_version_from 'lib/HTML/Truncate.pm';
+
+# requires "perl" => 5.006;
 requires "HTML::Tagset" => 3;
 requires "HTML::TokeParser" => 2;
 requires "List::Util" => 1;

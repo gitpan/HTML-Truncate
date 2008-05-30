@@ -1,5 +1,5 @@
 package HTML::Truncate;
-
+use 5.008;
 use strict;
 use warnings;
 use HTML::TokeParser;
@@ -15,11 +15,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.14
+0.15
 
 =cut
 
-our $VERSION = "0.14";
+our $VERSION = "0.15";
 
 =head1 ABSTRACT
 
@@ -681,6 +681,10 @@ C<bug-html-truncate@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=HTML-Truncate>. I
 will get the ticket, and then you'll automatically be notified of
 progress as I make changes.
+
+=head2 TO DO
+
+Try to make the 5.6 stuff work without decode...?
 
 =head1 THANKS TO
 

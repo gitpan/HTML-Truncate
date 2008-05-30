@@ -1,5 +1,11 @@
 Revision history for HTML-Truncate
 
+0.15    20080529
+        - Was considering trying to work around 5.6's utf8 issues but
+          it's not in the cards right now and I'd rather have a module
+          passing all its tests so, 5.8 or better required now.
+          Leaving skips in truncate_html.t in case I ever do it.
+
 0.14    20080529
         - Put in skips for tests involving utf8_mode and perl less
           than 5.8.

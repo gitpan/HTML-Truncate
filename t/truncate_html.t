@@ -20,7 +20,7 @@ ok( $ht->ellipsis() eq '&#8230;',
 diag ( 'Ellipsis: "' . $ht->ellipsis() . '"' ) if $ENV{TEST_VERBOSE};
 
 SKIP: {
-    skip "perl 5.8 or better for unicode features", 4 if $] < 5.08;
+    skip "perl 5.8 or better for unicode features", 4 if $] < 5.008;
 
     ok( $ht->utf8_mode(1), "Set utf8_mode" );
 

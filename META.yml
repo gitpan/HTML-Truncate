@@ -21,4 +21,5 @@ requires:
   HTML::Tagset: 3
   HTML::TokeParser: 2
   List::Util: 1
-version: 0.14
+  perl: 5.8.0
+version: 0.15

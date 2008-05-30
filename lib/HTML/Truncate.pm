@@ -1,13 +1,15 @@
 package HTML::Truncate;
+
 use 5.008;
 use strict;
 use warnings;
+no warnings "uninitialized";
+
 use HTML::TokeParser;
 use HTML::Tagset ();
 use HTML::Entities ();
 use Carp;
 use List::Util qw( first );
-no warnings "uninitialized";
 
 =head1 NAME
 
@@ -15,11 +17,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.15
+0.16
 
 =cut
 
-our $VERSION = "0.15";
+our $VERSION = "0.16";
 
 =head1 ABSTRACT
 
@@ -44,9 +46,6 @@ might still not be ideal but it is much closer than previously.
 
 Backwards compatibility from 0.11 and earlier is broken in renaming
 the method C<utf8> to L</utf8_mode>.
-
-Unicode behavior in perls earlier than 5.8 is bad/broken. Module
-I<might> work with them anyway.
 
 =head1 SYNOPSIS
 
@@ -270,10 +269,10 @@ methods L</chars> (or L</percent>) and L</ellipsis>.
 
 Valid nesting of tags is required (alla XHTML). Therefore some old
 HTML habits like E<lt>pE<gt> without a E<lt>/pE<gt> are not supported
-and will cause a fatal error.
+and may cause a fatal error. See L</repair> for help with badly formed
+HTML.
 
-Certain tags are omitted by default from the truncated output. There
-will be a mechanism to custom tailor these--
+Certain tags are omitted by default from the truncated output.
 
 =over 4
 
@@ -594,7 +593,7 @@ Set/get -- a regular expression. This is on by default and the default
 cleaning regular expression is C<cleanly(qr/[\s[:punct:]]+\z/)>. It
 will make the truncation strip any trailing spacing and punctuation so
 you don't get things like "The End...." or "What? ..." You can cancel
-it with C<<$ht->cleanly(undef)>> or provide your own regular
+it with C<$ht-E<gt>cleanly(undef)> or provide your own regular
 expression.
 
 =cut

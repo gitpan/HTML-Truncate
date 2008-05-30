@@ -1,5 +1,8 @@
 Revision history for HTML-Truncate
 
+0.16    20080529
+        - Updated Pod a bit.
+
 0.15    20080529
         - Was considering trying to work around 5.6's utf8 issues but
           it's not in the cards right now and I'd rather have a module

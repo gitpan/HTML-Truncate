@@ -1,5 +1,10 @@
 Revision history for HTML-Truncate
 
+0.14    20080529
+        - Put in skips for tests involving utf8_mode and perl less
+          than 5.8.
+        - Put Encode into test reqs and put File::Spec version.
+
 0.13    20080529
         - Fixed my build to remove META.yml, 0.12 had the file from
           0.11.

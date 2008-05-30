@@ -19,20 +19,24 @@ ok( $ht->ellipsis() eq '&#8230;',
 
 diag ( 'Ellipsis: "' . $ht->ellipsis() . '"' ) if $ENV{TEST_VERBOSE};
 
-ok( $ht->utf8_mode(1), "Set utf8_mode" );
+SKIP: {
+    skip "perl 5.8 or better for unicode features", 4 if $] < 5.08;
 
-ok( $ht->utf8_mode(), "Get utf8_mode" );
+    ok( $ht->utf8_mode(1), "Set utf8_mode" );
 
-ok( $ht->ellipsis() eq chr(8230),
-    "Ellipsis defaults properly" );
+    ok( $ht->utf8_mode(), "Get utf8_mode" );
 
-if ( $ENV{TEST_VERBOSE} )
-{
-    my $ellipsis = Encode::encode_utf8( $ht->ellipsis() );
-    diag( qq{Ellipsis: "$ellipsis"} );
+    ok( $ht->ellipsis() eq chr(8230),
+        "Ellipsis defaults properly" );
+
+    if ( $ENV{TEST_VERBOSE} )
+    {
+        my $ellipsis = Encode::encode_utf8( $ht->ellipsis() );
+        diag( qq{Ellipsis: "$ellipsis"} );
+    }
+
+    ok( $ht->utf8_mode(undef), "Unset utf8_mode" );
 }
-
-ok( $ht->utf8_mode(undef), "Unset utf8_mode" );
 
 ok( ! $ht->utf8_mode(), "Check utf8_mode is 'off'" );
 
@@ -53,18 +57,21 @@ ok( $ht->chars() == 100,
     ok( $ht->chars($char_count), "Setting chars to $char_count" );
     ok( $ht->chars() == $char_count, "Chars is reset to $char_count" );
 
-    ok( $ht->utf8_mode(1), "Setting utf8_mode" );
-    ok( $ht->cleanly(undef), "Turning off cleanly");
+  SKIP: {
+        skip "perl 5.8 or better for unicode features", 4 if $] < 5.01;
+        ok( $ht->utf8_mode(1), "Setting utf8_mode" );
+        ok( $ht->cleanly(undef), "Turning off cleanly");
 
-    ok( my $trunc = $ht->truncate($html), "Truncating HTML" );
-    my $strip = $trunc;
-    _strip_html($strip);
+        ok( my $trunc = $ht->truncate($html), "Truncating HTML" );
+        my $strip = $trunc;
+        _strip_html($strip);
 
-    is( length($strip), $ht->chars + length($ht->ellipsis),
-        "Length from character count matches expectation" );
+        is( length($strip), $ht->chars + length($ht->ellipsis),
+            "Length from character count matches expectation" );
 
-    diag("TRUNCATED:\n" . Encode::encode_utf8($trunc)) if $ENV{TEST_VERBOSE};
-    diag(" STRIPPED:\n" . Encode::encode_utf8($strip)) if $ENV{TEST_VERBOSE};
+        diag("TRUNCATED:\n" . Encode::encode_utf8($trunc)) if $ENV{TEST_VERBOSE};
+        diag(" STRIPPED:\n" . Encode::encode_utf8($strip)) if $ENV{TEST_VERBOSE};
+    }
 }
 
 {

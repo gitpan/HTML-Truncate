@@ -15,11 +15,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.13
+0.14
 
 =cut
 
-our $VERSION = "0.13";
+our $VERSION = "0.14";
 
 =head1 ABSTRACT
 
@@ -44,6 +44,9 @@ might still not be ideal but it is much closer than previously.
 
 Backwards compatibility from 0.11 and earlier is broken in renaming
 the method C<utf8> to L</utf8_mode>.
+
+Unicode behavior in perls earlier than 5.8 is bad/broken. Module
+I<might> work with them anyway.
 
 =head1 SYNOPSIS
 

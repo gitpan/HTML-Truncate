@@ -16,6 +16,8 @@ build_requires "Encode" => 2;
 build_requires "Test::More" => 0.5;
 build_requires "File::Spec" => 3;
 
+system('pod2text lib/Yesh.pm > README');
+
 auto_install;
 WriteAll;
 

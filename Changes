@@ -1,5 +1,15 @@
 Revision history for HTML-Truncate
 
+0.17    20090509
+        - Really been a year...?
+        - Typo in Pod.
+        - Autogenerate README.
+        - Bug in Pod showing utf8 => 1 setting.
+        - Fixed bad optimization in filter recipe.
+        - Fixed char counting problem I discovered while testing.
+        - Fixed standalone tag -- e.g., br -- close bug with repair.
+        - Might have made visual spacing counting more robust.
+
 0.16    20080529
         - Updated Pod a bit.
 

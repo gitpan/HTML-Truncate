@@ -18,6 +18,7 @@ META.yml
 README
 t/00-load.t
 t/author/descending_truncate.t
+t/author/plain.pl
 t/countdown-dirty.t
 t/countdown.t
 t/on_space.t

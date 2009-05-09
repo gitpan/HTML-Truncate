@@ -17,22 +17,22 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.16
+0.17
 
 =cut
 
-our $VERSION = "0.16";
+our $VERSION = "0.17";
 
 =head1 ABSTRACT
 
-When working with text it is convenient and common to want to truncate
-strings to make them fit a desired context. E.g., you might have a
-menu that is only 100px wide and prefer text doesn't wrap so you'd
-truncate it around 15-30 characters, depending on preference and
-typeface size. This is trivial with plain text using L<substr> but
-with HTML it is somewhat difficult because whitespace has fluid
-significance and open tags that are not properly closed destroy
-well-formedness and can wreck an entire layout.
+When working with text it is common to want to truncate strings to
+make them fit a desired context. E.g., you might have a menu that is
+only 100px wide and prefer text doesn't wrap so you'd truncate it
+around 15-30 characters, depending on preference and typeface size.
+This is trivial with plain text using L<substr> but with HTML it is
+somewhat difficult because whitespace has fluid significance and open
+tags that are not properly closed destroy well-formedness and can
+wreck an entire layout.
 
 L<HTML::Truncate> attempts to account for those two problems by
 padding truncation for spacing and entities and closing any tags that
@@ -278,7 +278,7 @@ Certain tags are omitted by default from the truncated output.
 
 =item * Skipped tags
 
-These will note be included in truncated output by default.
+These will not be included in truncated output by default.
 
    <head>...</head> <script>...</script> <form>...</form>
    <iframe></iframe> <title>...</title> <style>...</style>
@@ -352,8 +352,9 @@ sub truncate {
         if ( $token->[0] eq 'S' )
         {
             # _callback_for...? 321
-            next TOKEN if $self->{_skip_tags}{$token->[1]};
-            push @tag_q, $token->[1] unless $HTML::Tagset::emptyElement{$token->[1]};
+            ( my $real_tag = $token->[1] ) =~ s,/\z,,;
+            next TOKEN if $self->{_skip_tags}{$real_tag};
+            push @tag_q, $token->[1] unless $HTML::Tagset::emptyElement{$real_tag};
             $renew .= $token->[-1];
         }
         elsif ( $token->[0] eq 'E' )
@@ -399,8 +400,9 @@ sub truncate {
         elsif ( $token->[0] eq 'T' )
         {
             next TOKEN if $token->[2]; # DATA
-            my $txt = HTML::Entities::decode($token->[1]);
-
+#            my $txt = HTML::Entities::decode($token->[1]);
+            my $txt = $token->[1];
+            my $current_length = 0;
             unless ( first { $_ eq 'pre' } @tag_q ) # We're not somewhere inside a <pre/>
             {
                 $txt =~ s/\s+/ /g;
@@ -410,7 +412,7 @@ sub truncate {
                      ! $HTML::Tagset::isPhraseMarkup{$previous_token->[1]}
                      )
                 {
-                    $txt =~ s/\A //;
+                    $txt =~ s/\A +//;
                 }
 
                 if ( ! $HTML::Tagset::isPhraseMarkup{$tag_q[-1]} # in flow
@@ -418,11 +420,15 @@ sub truncate {
                      ! $HTML::Tagset::isPhraseMarkup{$next_token->[1]}
                      )
                 {
-                    $txt =~ s/ \z//;
+                    $txt =~ s/ +\z//;
                 }
+                $current_length = _count_visual_chars($txt);
+            }
+            else
+            {
+                $current_length = length($txt);
             }
 
-            my $current_length = length($txt);
             $total += $current_length;
 
             if ( $total >= $chars )
@@ -448,8 +454,9 @@ sub truncate {
 
                 if ( $keep )
                 {
-                    $renew .= $self->utf8_mode ?
-                        $keep : HTML::Entities::encode($keep);
+#                    $renew .= $self->utf8_mode ?
+#                        $keep : HTML::Entities::encode($keep);
+                    $renew .= $keep;
                 }
 
                 $renew .= $self->ellipsis();
@@ -544,18 +551,21 @@ sub _load_chars_from_percent {
     while ( my $token = $p->get_token )
     {
     # don't check padding b/c we're going by a document average
-        next unless $token->[0] eq 'T' and not $token->[2];
+        next unless $token->[0] eq 'T' and not $token->[2]; # Not data.
         $txt_length += _count_visual_chars( $token->[1] );
     }
     $self->chars( int( $txt_length * $self->{_percent} ) );
 }
 
 sub _count_visual_chars { # private function
-    my $to_count = shift;
-    my $count = () =
-        $to_count =~
-        /\&\#\d+;|\&[[:alpha:]]{2,5};|\S|\s+/g;
-    return $count;
+    my $to_count = HTML::Entities::decode_entities(+shift);
+    $to_count =~ s/\s\s+/ /g;
+    $to_count =~ s/[^[:print:]]+//g;
+#    my $count = () =
+#        $to_count =~
+#        /\&\#\d+;|\&[[:alpha:]]{2,5};|\S|\s+/g;
+#   return $count;
+    return length($to_count);
 }
 
 # Need to put hooks for these or not? 321
@@ -565,11 +575,11 @@ sub _count_visual_chars { # private function
 #    }
 #}
 
-
 =item B<on_space>
 
 This will make the truncation back up to the first space it finds so
-it doesn't truncate in the the middle of a word.
+it doesn't truncate in the the middle of a word. L</on_space> runs
+before L</cleanly> if both are set.
 
 =cut
 
@@ -640,8 +650,8 @@ is set to drop any images from the truncated output.
      $ellipsis = chr(8230) unless defined $ellipsis;
      my $html = shift || return '';
      my $ht = HTML::Truncate->new();
+     $ht->add_skip_tags(qw( img ));
      return sub {
-         $ht->add_skip_tags(qw( img ));
          return $ht->truncate( $html, $len, $ellipsis );
      }
  }
@@ -683,7 +693,7 @@ progress as I make changes.
 
 =head2 TO DO
 
-Try to make the 5.6 stuff work without decode...?
+Write a couple more tests (percent and skip stuff) then take out beta notice. Try to make the 5.6 stuff work without decode...? Try a C<drop_tags> method?
 
 =head1 THANKS TO
 
@@ -693,17 +703,15 @@ Lorenzo Iannuzzi for the L</on_space> functionality.
 
 =head1 SEE ALSO
 
-L<HTML::Entities>, L<HTML::TokeParser>, the "truncate" filter in
-L<Template>, and L<Text::Truncate>.
+L<HTML::Entities>, L<HTML::TokeParser>, the "truncate" filter in L<Template>, and L<Text::Truncate>.
 
 L<HTML::Scrubber> and L<HTML::Sanitizer>.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright (E<copy>) 2005-2008 Ashley Pond V.
+Copyright (E<copy>) 2005-2009 Ashley Pond V.
 
-This program is free software; you can redistribute it or modify it or
-both under the same terms as Perl itself.
+This program is free software; you can redistribute it or modify it or both under the same terms as Perl itself.
 
 =head1 DISCLAIMER OF WARRANTY
 

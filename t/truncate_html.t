@@ -85,7 +85,7 @@ ok( $ht->chars() == 100,
     my $strip = $trunc;
     _strip_html($strip);
 
-    is( length($strip), $ht->chars + length($ht->ellipsis),
+    is( length($strip), ( $ht->chars + length($ht->ellipsis) ),
         "Length from character count matches expectation" );
 
     diag("TRUNCATED:\n" . Encode::encode_utf8($trunc)) if $ENV{TEST_VERBOSE};

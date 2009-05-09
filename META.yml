@@ -7,7 +7,7 @@ build_requires:
   File::Spec: 3
   Test::More: 0.5
 distribution_type: module
-generated_by: 'Module::Install version 0.710'
+generated_by: 'Module::Install version 0.75'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
@@ -22,4 +22,4 @@ requires:
   HTML::TokeParser: 2
   List::Util: 1
   perl: 5.8.0
-version: 0.16
+version: 0.17

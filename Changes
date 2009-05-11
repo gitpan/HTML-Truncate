@@ -1,5 +1,8 @@
 Revision history for HTML-Truncate
 
+0.18
+        - Fixed broken README.
+
 0.17    20090509
         - Really been a year...?
         - Typo in Pod.

@@ -17,11 +17,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.17
+0.18
 
 =cut
 
-our $VERSION = "0.17";
+our $VERSION = "0.18";
 
 =head1 ABSTRACT
 

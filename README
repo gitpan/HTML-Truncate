@@ -3,7 +3,7 @@ NAME
     character count while preserving well-formedness.
 
 VERSION
-    0.18
+    0.19
 
 ABSTRACT
     When working with text it is common to want to truncate strings to make
@@ -65,7 +65,7 @@ METHODS
         are incompatible so don't use them both. Whichever is set most
         recently will erase the other.
 
-         my $ht = HTML::Truncate->new(utf8 => 1,
+         my $ht = HTML::Truncate->new(utf8_mode => 1,
                                       chars => 500, # default is 100
                                       );
 
@@ -114,7 +114,7 @@ METHODS
 
          my $truncated = $ht->truncate($html);
 
-        It will trucate the string in place if no return value is expected
+        It will truncate the string in place if no return value is expected
         (wantarray is not defined).
 
            $ht->truncate($html);
@@ -151,9 +151,10 @@ METHODS
     add_skip_tags( qw( tag list ) )
         Put one or more new tags into the list of those to be omitted from
         truncated output. An example of when you might like to use this is
-        if you're thumbnailing articles and they start with "<h1>title</h1>"
-        or such before the article body. The heading level would be absurd
-        with a list of excerpts so you could drop it completely this way--
+        if you're thumb-nailing articles and they start with
+        "<h1>title</h1>" or such before the article body. The heading level
+        would be absurd with a list of excerpts so you could drop it
+        completely this way--
 
          $ht->add_skip_tags( 'h1' );
 

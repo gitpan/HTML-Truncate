@@ -17,11 +17,11 @@ HTML::Truncate - (beta software) truncate HTML by percentage or character count 
 
 =head1 VERSION
 
-0.18
+0.19
 
 =cut
 
-our $VERSION = "0.18";
+our $VERSION = "0.19";
 
 =head1 ABSTRACT
 
@@ -93,7 +93,7 @@ Can take all the methods as hash style args. "percent" and "chars" are
 incompatible so don't use them both. Whichever is set most recently
 will erase the other.
 
- my $ht = HTML::Truncate->new(utf8 => 1,
+ my $ht = HTML::Truncate->new(utf8_mode => 1,
                               chars => 500, # default is 100
                               );
 
@@ -251,7 +251,7 @@ It returns the truncated XHTML if asked for a return value.
 
  my $truncated = $ht->truncate($html);
 
-It will trucate the string in place if no return value is expected
+It will truncate the string in place if no return value is expected
 (L<wantarray> is not defined).
 
    $ht->truncate($html);
@@ -485,7 +485,7 @@ sub truncate {
 
 Put one or more new tags into the list of those to be omitted from
 truncated output. An example of when you might like to use this is if
-you're thumbnailing articles and they start with C<< <h1>title</h1> >>
+you're thumb-nailing articles and they start with C<< <h1>title</h1> >>
 or such before the article body. The heading level would be absurd
 with a list of excerpts so you could drop it completely this way--
 

@@ -1,5 +1,9 @@
 Revision history for HTML-Truncate
 
+0.20    20090713
+        - Normalized test names to hyphen from underscore.
+        - Patch from the omnipresent t0m to fix TT2 recipe.
+
 0.19    20090512
         - Fixed Pod typos.
 

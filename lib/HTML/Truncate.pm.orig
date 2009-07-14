@@ -630,10 +630,10 @@ is set to drop any images from the truncated output.
      my ( $context, $len, $ellipsis ) = @_;
      $len = 32 unless $len;
      $ellipsis = chr(8230) unless defined $ellipsis;
+     my $html = shift || return '';
      my $ht = HTML::Truncate->new();
      $ht->add_skip_tags(qw( img ));
      return sub {
-         my $html = shift || return '';
          return $ht->truncate( $html, $len, $ellipsis );
      }
  }

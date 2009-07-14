@@ -11,6 +11,7 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/HTML/Truncate.pm
+lib/HTML/Truncate.pm.orig
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
@@ -21,11 +22,12 @@ t/author/descending_truncate.t
 t/author/plain.pl
 t/countdown-dirty.t
 t/countdown.t
-t/on_space.t
+t/linked-readmore.t
+t/on-space.t
 t/pre.t
 t/repair.t
 t/synopsis.t
-t/truncate_html.t
+t/truncate-html.t
 xt/perl-critic.t
 xt/pod-coverage.t
 xt/pod.t

@@ -3,7 +3,7 @@ NAME
     character count while preserving well-formedness.
 
 VERSION
-    0.19
+    0.20
 
 ABSTRACT
     When working with text it is common to want to truncate strings to make
@@ -18,14 +18,6 @@ ABSTRACT
     HTML::Truncate attempts to account for those two problems by padding
     truncation for spacing and entities and closing any tags that remain
     open at the point of truncation.
-
-  NOTA BENE
-    Previous versions did not truncate characters to any good degree of
-    accuracy so the internals were rewritten a bit starting with 0.12. It
-    might still not be ideal but it is much closer than previously.
-
-    Backwards compatibility from 0.11 and earlier is broken in renaming the
-    method "utf8" to "utf8_mode".
 
 SYNOPSIS
      use strict;
@@ -204,10 +196,10 @@ COOKBOOK (well, a recipe)
          my ( $context, $len, $ellipsis ) = @_;
          $len = 32 unless $len;
          $ellipsis = chr(8230) unless defined $ellipsis;
-         my $html = shift || return '';
          my $ht = HTML::Truncate->new();
          $ht->add_skip_tags(qw( img ));
          return sub {
+             my $html = shift || return '';
              return $ht->truncate( $html, $len, $ellipsis );
          }
      }
@@ -247,6 +239,9 @@ BUGS, FEEDBACK, PATCHES
     Write a couple more tests (percent and skip stuff) then take out beta
     notice. Try to make the 5.6 stuff work without decode...? Try a
     "drop_tags" method?
+
+    Write an XML::LibXML based version to load when possible...? Or make
+    that part of XHTML::Util?
 
 THANKS TO
     Kevin Riggle for the "repair" functionality; patch, Pod, and tests.
